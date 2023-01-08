@@ -2,7 +2,7 @@
 
 Coding test for Eskuad.
 
-## Installation
+# Installation
 
 Use the next command to run the project and install all the neccesary dependencies.
 
@@ -10,7 +10,7 @@ Use the next command to run the project and install all the neccesary dependenci
 flutter run
 ```
 
-## Extras
+# Extras
 
 Button to sort the articles by date in ascending/descending order.
 
