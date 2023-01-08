@@ -5,6 +5,7 @@ import 'dart:developer' as developer;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'components/article.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Eskuad Articles',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -33,14 +34,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  ScrollController scrollController = ScrollController();
   ConnectivityResult _connectionStatus = ConnectivityResult.none;
+
   final Connectivity _connectivity = Connectivity();
   late StreamSubscription<ConnectivityResult> _connectivitySubscription;
 
   bool isLoading = false;
   List articles = [];
   var sortBool = false;
-
+  String sortedText = "Descending order";
   @override
   void initState() {
     super.initState();
@@ -72,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
             textColor: Colors.white,
             fontSize: 16.0);
       } else {
-        this.fetchData();
+        fetchData();
       }
     } catch (e) {
       developer.log('No se pudo revisar la conexión', error: e);
@@ -92,12 +95,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void sortByDate() {
     if (sortBool) {
+      sortedText = "Descending order";
       setState(() {
         articles.sort((a, b) {
           return b['created_at'].compareTo(a['created_at']);
         });
       });
     } else {
+      sortedText = "Ascending order";
       setState(() {
         articles.sort((a, b) {
           return a['created_at'].compareTo(b['created_at']);
@@ -129,21 +134,76 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-          leading: IconButton(
-            icon: Icon(sortBool ? Icons.arrow_drop_up : Icons.arrow_drop_down),
-            onPressed: sortByDate,
-          ),
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(sortedText),
+              Center(
+                child: IconButton(
+                  icon: Icon(
+                      sortBool ? Icons.arrow_drop_up : Icons.arrow_drop_down),
+                  onPressed: sortByDate,
+                ),
+              )
+            ],
+          )
+        ],
+      ),
+      floatingActionButton: AnimatedOpacity(
+        duration: const Duration(milliseconds: 1000), //show/hide animation
+        opacity: 1.0, //set obacity to 1 on visible, or hide
+        child: FloatingActionButton(
+          onPressed: () {
+            scrollController.animateTo(
+                //go to top of scroll
+                0, //scroll offset to go
+                duration:
+                    const Duration(milliseconds: 500), //duration of scroll
+                curve: Curves.fastOutSlowIn //scroll type
+                );
+          },
+          backgroundColor: Colors.blue,
+          child: const Icon(Icons.arrow_upward),
         ),
-        body: mainBody());
+      ),
+      body: Center(
+          child: RefreshIndicator(
+              onRefresh: initConnectivity,
+              child: SingleChildScrollView(
+                  controller: scrollController, child: mainBody2()))),
+    );
   }
 
-  Widget mainBody() {
-    if (articles.contains(null) || articles.length < 0 || isLoading) {
-      return Center(
+  Widget mainBody2() {
+    if (articles.contains(null) || articles.length <= 0 || isLoading) {
+      return const Center(
           child: CircularProgressIndicator(
-        valueColor: new AlwaysStoppedAnimation<Color>(Colors.blue),
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+      ));
+    }
+    return Column(
+        children: articles.map((article) {
+      return Article(
+          createdAt: article['created_at'] ?? 'No date',
+          storyTitle: article['story_title'] ?? 'No title',
+          author: article['author'] ?? 'No author');
+      ;
+    }).toList());
+  }
+
+  /*
+
+!!!!!!!!!!!!!!!!!!!!!!!NOT USED , DELETE IF YOU WANT !!!!!!!!!!!!!!!!!!!!!!!
+
+Widget mainBody() {
+    if (articles.contains(null) || articles.length <= 0 || isLoading) {
+      return const Center(
+          child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
       ));
     }
     return RefreshIndicator(
@@ -157,35 +217,5 @@ class _MyHomePageState extends State<MyHomePage> {
                   author: articles[index]['author'] ?? 'No author');
             }));
   }
-}
-
-class Article extends StatelessWidget {
-  String createdAt;
-  String storyTitle;
-  String author;
-
-  Article({
-    super.key,
-    required this.createdAt,
-    required this.storyTitle,
-    required this.author,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Card(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text(storyTitle),
-              subtitle: Text("Author : " + author),
-              trailing: Text(createdAt),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+ */
 }
