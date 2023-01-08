@@ -58,13 +58,29 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
+  Future fetchData() async {
+    sortBool = false;
+    setState(() {
+      isLoading = true;
+    });
+    var url = "https://hn.algolia.com/api/v1/search_by_date?query=mobile";
+    var response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      var items = json.decode(response.body)['hits'];
+      setState(() {
+        articles = items;
+        isLoading = false;
+      });
+    } else {
+      articles = [];
+      isLoading = false;
+    }
+  }
+
   Future<void> initConnectivity() async {
     late ConnectivityResult result;
-    // Platform messages may fail, so we use a try/catch PlatformException.
     try {
       result = await _connectivity.checkConnectivity();
-      print(result);
       if (result == ConnectivityResult.none) {
         Fluttertoast.showToast(
             msg: "No hay conexión a internet",
@@ -112,25 +128,6 @@ class _MyHomePageState extends State<MyHomePage> {
     sortBool = !sortBool;
   }
 
-  Future fetchData() async {
-    sortBool = false;
-    setState(() {
-      isLoading = true;
-    });
-    var url = "https://hn.algolia.com/api/v1/search_by_date?query=mobile";
-    var response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      var items = json.decode(response.body)['hits'];
-      setState(() {
-        articles = items;
-        isLoading = false;
-      });
-    } else {
-      articles = [];
-      isLoading = false;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -155,7 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: AnimatedOpacity(
         duration: const Duration(milliseconds: 1000), //show/hide animation
-        opacity: 1.0, //set obacity to 1 on visible, or hide
+        opacity: 0.5, //set obacity to 1 on visible, or hide
         child: FloatingActionButton(
           onPressed: () {
             scrollController.animateTo(
@@ -174,11 +171,11 @@ class _MyHomePageState extends State<MyHomePage> {
           child: RefreshIndicator(
               onRefresh: initConnectivity,
               child: SingleChildScrollView(
-                  controller: scrollController, child: mainBody2()))),
+                  controller: scrollController, child: mainBody()))),
     );
   }
 
-  Widget mainBody2() {
+  Widget mainBody() {
     if (articles.contains(null) || articles.length <= 0 || isLoading) {
       return const Center(
           child: CircularProgressIndicator(
